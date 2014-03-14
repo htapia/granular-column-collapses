@@ -73,3 +73,39 @@ class NotebookFinder(object):
         if key not in self.loaders:
             self.loaders[key] = NotebookLoader(path)
         return self.loaders[key]
+
+# register the hook
+sys.meta_path.append(NotebookFinder())
+
+
+
+# functions for display of notebook content inside notebook
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import HtmlFormatter
+
+from IPython.display import display, HTML
+
+formatter = HtmlFormatter()
+lexer = PythonLexer()
+
+# publish the CSS for pygments highlighting
+display(HTML("""
+<style type='text/css'>
+%s
+</style>
+""" % formatter.get_style_defs()
+))
+
+def show_notebook(fname):
+    """display a short summary of the cells of a notebook"""
+    with io.open(fname, 'r', encoding='utf-8') as f:
+        nb = current.read(f, 'json')
+    html = []
+    for cell in nb.worksheets[0].cells:
+        html.append("<h4>%s cell</h4>" % cell.cell_type)
+        if cell.cell_type == 'code':
+            html.append(highlight(cell.input, lexer, formatter))
+        else:
+            html.append("<pre>%s</pre>" % cell.source)
+    display(HTML('\n'.join(html)))
